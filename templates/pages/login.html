@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div style="min-height:85vh; display:flex; align-items:center; justify-content:center; padding:2rem;">
+        <div class="card" style="width:100%; max-width:420px;">
+            <div class="card-body">
+
+                <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:0.3rem;">Welcome Back</h2>
+                <p style="color:#6c757d; font-size:0.9rem; margin-bottom:1.5rem;">Login to your NaijaHomes account</p>
+
+                <div id="alert" class="alert"></div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="Enter your email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Enter your password">
+                </div>
+
+                <button class="btn btn-primary btn-full" onclick="loginUser()">Login</button>
+
+                <!-- Demo account info for presentation -->
+                <div style="background:#f8f9fa; border-radius:8px; padding:1rem; margin-top:1rem; font-size:0.85rem;">
+                    <strong>Demo Accounts:</strong><br>
+                    🏠 Landlord: landlord@demo.com / password123<br>
+                    👤 Tenant: tenant@demo.com / password123
+                </div>
+
+                <p style="text-align:center; margin-top:1rem; font-size:0.9rem; color:#6c757d;">
+                    No account? <a href="/register/" style="color:#1a6b3c; font-weight:600;">Register here</a>
+                </p>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        redirectIfLoggedIn();
+
+        async function loginUser() {
+            const email    = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('alert', 'Please enter your email and password.');
+                return;
+            }
+
+            const result = await apiPost('/accounts/login/', { email, password });
+
+            if (result.ok) {
+                saveUser(result.data.user);
+                showSuccess('alert', 'Login successful! Redirecting...');
+                setTimeout(() => window.location.href = '/dashboard/', 1000);
+            } else {
+                showError('alert', result.data.error || 'Login failed.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('password').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loginUser();
+            });
+        });
+    </script>
+</body>
+</html>

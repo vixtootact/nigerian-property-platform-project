@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div style="min-height:85vh; display:flex; align-items:center; justify-content:center; padding:2rem;">
+        <div class="card" style="width:100%; max-width:480px;">
+            <div class="card-body">
+
+                <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:0.3rem;">Create Account</h2>
+                <p style="color:#6c757d; font-size:0.9rem; margin-bottom:1.5rem;">Join NaijaHomes today</p>
+
+                <div id="alert" class="alert"></div>
+
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" id="firstName" class="form-control" placeholder="e.g. Chukwuemeka">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" id="lastName" class="form-control" placeholder="e.g. Okonkwo">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="e.g. chukwu@gmail.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" id="phone" class="form-control" placeholder="e.g. 08012345678">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">I am a...</label>
+                    <select id="role" class="form-control">
+                        <option value="tenant">Tenant (Looking for property)</option>
+                        <option value="landlord">Landlord (Listing property)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Minimum 8 characters">
+                </div>
+
+                <button class="btn btn-primary btn-full" onclick="registerUser()">
+                    Create Account
+                </button>
+
+                <p style="text-align:center; margin-top:1rem; font-size:0.9rem; color:#6c757d;">
+                    Already have an account? <a href="/login/" style="color:#1a6b3c; font-weight:600;">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        redirectIfLoggedIn();
+
+        async function registerUser() {
+            const first_name = document.getElementById('firstName').value.trim();
+            const last_name  = document.getElementById('lastName').value.trim();
+            const email      = document.getElementById('email').value.trim();
+            const phone      = document.getElementById('phone').value.trim();
+            const role       = document.getElementById('role').value;
+            const password   = document.getElementById('password').value;
+
+            if (!first_name || !last_name || !email || !password) {
+                showError('alert', 'Please fill in all required fields.');
+                return;
+            }
+
+            if (password.length < 8) {
+                showError('alert', 'Password must be at least 8 characters.');
+                return;
+            }
+
+            const result = await apiPost('/accounts/register/', {
+                first_name, last_name, email, phone, role, password
+            });
+
+            if (result.ok) {
+                saveUser(result.data.user);
+                showSuccess('alert', 'Account created successfully! Redirecting...');
+                setTimeout(() => window.location.href = '/dashboard/', 1000);
+            } else {
+                showError('alert', result.data.error || 'Registration failed.');
+            }
+        }
+    </script>
+</body>
+</html>

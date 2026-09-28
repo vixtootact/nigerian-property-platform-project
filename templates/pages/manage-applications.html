@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Applications - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="page-header">
+        <div class="container">
+            <div class="page-title">Manage Applications</div>
+            <div class="page-subtitle">Review and respond to tenant applications</div>
+        </div>
+    </div>
+
+    <div class="container" style="padding-bottom:3rem;">
+
+        <div id="alert" class="alert"></div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 style="font-weight:700; margin-bottom:1rem;">Incoming Applications</h3>
+                <div id="applicationsList">
+                    <div class="spinner">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>© 2024 NaijaHomes - Nigerian Property & Rental Management Platform</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        requireLogin();
+        const user = getUser();
+
+        if (user && user.role !== 'landlord') {
+            window.location.href = '/dashboard/';
+        }
+
+        async function loadApplications() {
+            const result = await apiGet(`/applications/landlord/${user.id}/`);
+
+            if (!result.ok) {
+                document.getElementById('applicationsList').innerHTML =
+                    '<p style="color:red;">Could not load applications.</p>';
+                return;
+            }
+
+            const apps = result.data.applications;
+
+            if (apps.length === 0) {
+                document.getElementById('applicationsList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No applications received yet.</p>
+                    </div>`;
+                return;
+            }
+
+            document.getElementById('applicationsList').innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tenant</th>
+                            <th>Property</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${apps.map(a => `
+                            <tr id="row-${a.id}">
+                                <td>
+                                    <strong>${a.tenant_name}</strong><br>
+                                    <small style="color:#6c757d;">${a.tenant_email}</small><br>
+                                    <small style="color:#6c757d;">${a.tenant_phone || ''}</small>
+                                </td>
+                                <td>
+                                    <a href="/property-detail/?id=${a.property_id}"
+                                        style="color:#1a6b3c; font-weight:600;">
+                                        ${a.property_title}
+                                    </a><br>
+                                    <small style="color:#6c757d;">${a.property_location}</small>
+                                </td>
+                                <td style="max-width:200px;">
+                                    <small>${a.message || 'No message provided'}</small>
+                                </td>
+                                <td>${formatDate(a.applied_at)}</td>
+                                <td>${statusBadge(a.status)}</td>
+                                <td>
+                                    ${a.status === 'pending' ? `
+                                        <button class="btn btn-primary"
+                                            style="padding:0.3rem 0.8rem; font-size:0.8rem; margin-bottom:0.3rem;"
+                                            onclick="updateStatus(${a.id}, 'approved')">
+                                            ✅ Approve
+                                        </button>
+                                        <button class="btn btn-danger"
+                                            style="padding:0.3rem 0.8rem; font-size:0.8rem;"
+                                            onclick="updateStatus(${a.id}, 'rejected')">
+                                            ❌ Reject
+                                        </button>
+                                    ` : `<span style="color:#6c757d; font-size:0.85rem;">Reviewed</span>`}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        async function updateStatus(appId, newStatus) {
+            const action = newStatus === 'approved' ? 'approve' : 'reject';
+            if (!confirm(`Are you sure you want to ${action} this application?`)) return;
+
+            const result = await apiPut(`/applications/${appId}/update/`, {
+                status: newStatus,
+                landlord_id: user.id
+            });
+
+            if (result.ok) {
+                showSuccess('alert', `Application ${newStatus} successfully.`);
+                loadApplications();
+            } else {
+                showError('alert', result.data.error || 'Could not update application.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadApplications);
+    </script>
+</body>
+</html>

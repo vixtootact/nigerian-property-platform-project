@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Property - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="page-header">
+        <div class="container">
+            <div class="page-title">Add New Property</div>
+            <div class="page-subtitle">Fill in the details to list your property</div>
+        </div>
+    </div>
+
+    <div class="container" style="padding-bottom:3rem;">
+        <div style="max-width:700px; margin:0 auto;">
+            <div class="card">
+                <div class="card-body">
+
+                    <div id="alert" class="alert"></div>
+
+                    <h3 style="font-weight:700; margin-bottom:1rem; color:#1a6b3c;">
+                        Basic Information
+                    </h3>
+
+                    <div class="form-group">
+                        <label class="form-label">Property Title *</label>
+                        <input type="text" id="title" class="form-control"
+                            placeholder="e.g. Modern 3 Bedroom Flat in Lekki">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea id="description" class="form-control" rows="4"
+                            placeholder="Describe the property - facilities, nearby landmarks, special features...">
+                        </textarea>
+                    </div>
+
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Property Type *</label>
+                            <select id="propertyType" class="form-control">
+                                <option value="">Select type...</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="duplex">Duplex</option>
+                                <option value="bungalow">Bungalow</option>
+                                <option value="self-contain">Self Contain</option>
+                                <option value="room">Room</option>
+                                <option value="mansion">Mansion</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Annual Rent Price (₦) *</label>
+                            <input type="number" id="price" class="form-control"
+                                placeholder="e.g. 500000">
+                        </div>
+                    </div>
+
+                    <h3 style="font-weight:700; margin:1.5rem 0 1rem; color:#1a6b3c;">
+                        Location
+                    </h3>
+
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Area / Neighborhood *</label>
+                            <input type="text" id="location" class="form-control"
+                                placeholder="e.g. Lekki Phase 1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">State *</label>
+                            <select id="state" class="form-control">
+                                <option value="">Select state...</option>
+                                <option>Lagos</option>
+                                <option>Abuja</option>
+                                <option>Rivers</option>
+                                <option>Enugu</option>
+                                <option>Oyo</option>
+                                <option>Edo</option>
+                                <option>Kano</option>
+                                <option>Kaduna</option>
+                                <option>Delta</option>
+                                <option>Anambra</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Local Government Area (LGA)</label>
+                        <input type="text" id="lga" class="form-control"
+                            placeholder="e.g. Eti-Osa">
+                    </div>
+
+                    <h3 style="font-weight:700; margin:1.5rem 0 1rem; color:#1a6b3c;">
+                        Property Details
+                    </h3>
+
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Number of Bedrooms</label>
+                            <input type="number" id="bedrooms" class="form-control"
+                                placeholder="e.g. 3" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Number of Bathrooms</label>
+                            <input type="number" id="bathrooms" class="form-control"
+                                placeholder="e.g. 2" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Image URL (Optional)</label>
+                        <input type="text" id="imageUrl" class="form-control"
+                            placeholder="Paste a link to a property photo">
+                    </div>
+
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button class="btn btn-primary" style="flex:1;" onclick="addProperty()">
+                            📋 List Property
+                        </button>
+                        <a href="/dashboard/" class="btn btn-outline" style="flex:1; text-align:center;">
+                            Cancel
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 NaijaHomes - Nigerian Property & Rental Management Platform</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        requireLogin();
+
+        const user = getUser();
+
+        if (user && user.role !== 'landlord') {
+            alert('Only landlords can add properties.');
+            window.location.href = '/dashboard/';
+        }
+
+        async function addProperty() {
+            const title        = document.getElementById('title').value.trim();
+            const description  = document.getElementById('description').value.trim();
+            const propertyType = document.getElementById('propertyType').value;
+            const price        = document.getElementById('price').value;
+            const location     = document.getElementById('location').value.trim();
+            const state        = document.getElementById('state').value;
+            const lga          = document.getElementById('lga').value.trim();
+            const bedrooms     = document.getElementById('bedrooms').value;
+            const bathrooms    = document.getElementById('bathrooms').value;
+            const imageUrl     = document.getElementById('imageUrl').value.trim();
+
+            if (!title || !propertyType || !price || !location || !state) {
+                showError('alert', 'Please fill in all required fields marked with *');
+                return;
+            }
+
+            if (parseFloat(price) <= 0) {
+                showError('alert', 'Please enter a valid price.');
+                return;
+            }
+
+            const result = await apiPost('/properties/', {
+                title,
+                description,
+                property_type: propertyType,
+                price,
+                location,
+                state,
+                lga,
+                bedrooms,
+                bathrooms,
+                image_url: imageUrl,
+                landlord_id: user.id
+            });
+
+            if (result.ok) {
+                showSuccess('alert', 'Property listed successfully! Redirecting...');
+                setTimeout(() => window.location.href = '/dashboard/', 1500);
+            } else {
+                showError('alert', result.data.error || 'Could not add property.');
+            }
+        }
+    </script>
+</body>
+</html>

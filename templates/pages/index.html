@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NaijaHomes - Find Your Perfect Home in Nigeria</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <section class="hero">
+        <h1>Find Your Perfect Home in <span>Nigeria</span></h1>
+        <p>Search thousands of properties across Lagos, Abuja, Port Harcourt and more. Rent smarter with NaijaHomes.</p>
+
+        <div class="hero-search">
+            <input type="text" id="heroSearch" placeholder="Search by location, e.g. Lekki, Abuja...">
+            <button class="btn btn-secondary" onclick="heroSearch()">Search</button>
+        </div>
+    </section>
+
+    <section style="background: white; padding: 2rem 0; border-bottom: 1px solid #dee2e6;">
+        <div class="container">
+            <div class="grid-4" id="statsRow">
+                <div class="stat-card">
+                    <div class="stat-card-number" id="totalProps">...</div>
+                    <div class="stat-card-label">Properties Listed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-number" id="totalAvail">...</div>
+                    <div class="stat-card-label">Available Now</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-number">6</div>
+                    <div class="stat-card-label">Nigerian States</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-number">6</div>
+                    <div class="stat-card-label">Property Types</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section style="padding: 3rem 0;">
+        <div class="container">
+            <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:0.5rem;">Featured Properties</h2>
+            <p style="color:#6c757d; margin-bottom:2rem;">Handpicked properties across Nigeria</p>
+
+            <div class="grid-3" id="featuredProperties">
+                <div class="spinner">Loading properties...</div>
+            </div>
+
+            <div style="text-align:center; margin-top:2rem;">
+                <a href="/properties/" class="btn btn-primary">View All Properties</a>
+            </div>
+        </div>
+    </section>
+
+    <section style="background:white; padding:3rem 0;">
+        <div class="container">
+            <h2 style="text-align:center; font-size:1.5rem; font-weight:700; margin-bottom:2rem;">How It Works</h2>
+            <div class="grid-3">
+                <div style="text-align:center; padding:1.5rem;">
+                    <div style="font-size:2.5rem; margin-bottom:1rem;">🔍</div>
+                    <h3 style="margin-bottom:0.5rem;">Search Properties</h3>
+                    <p style="color:#6c757d; font-size:0.9rem;">Filter by location, price, and property type to find exactly what you need.</p>
+                </div>
+                <div style="text-align:center; padding:1.5rem;">
+                    <div style="font-size:2.5rem; margin-bottom:1rem;">📋</div>
+                    <h3 style="margin-bottom:0.5rem;">Apply Online</h3>
+                    <p style="color:#6c757d; font-size:0.9rem;">Submit your rental application directly through the platform.</p>
+                </div>
+                <div style="text-align:center; padding:1.5rem;">
+                    <div style="font-size:2.5rem; margin-bottom:1rem;">🏠</div>
+                    <h3 style="margin-bottom:0.5rem;">Move In</h3>
+                    <p style="color:#6c757d; font-size:0.9rem;">Get approved and move into your new home stress-free.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2024 NaijaHomes - Nigerian Property & Rental Management Platform</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadStats() {
+            const result = await apiGet('/properties/stats/summary/');
+            if (result.ok) {
+                document.getElementById('totalProps').textContent = result.data.total_properties;
+
+                const available = result.data.by_status.find(s => s.status === 'available');
+                document.getElementById('totalAvail').textContent = available ? available.count : 0;
+            }
+        }
+
+        async function loadFeatured() {
+            const result = await apiGet('/properties/');
+            const container = document.getElementById('featuredProperties');
+
+            if (!result.ok) {
+                container.innerHTML = '<p style="color:red;">Could not load properties.</p>';
+                return;
+            }
+
+            const properties = result.data.properties.slice(0, 6);
+
+            if (properties.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏠</div><p>No properties yet.</p></div>';
+                return;
+            }
+
+            container.innerHTML = properties.map(p => `
+                <div class="property-card" onclick="window.location.href='/property-detail/?id=${p.id}'">
+                    <div class="property-card-image">${propertyIcon(p.property_type)}</div>
+                    <div class="property-card-body">
+                        <div class="property-card-title">${p.title}</div>
+                        <div class="property-card-location">📍 ${p.location}, ${p.state}</div>
+                        <div class="property-card-price">${formatPrice(p.price)}/year</div>
+                        <div class="property-card-footer">
+                            <span>🛏️ ${p.bedrooms} bed &nbsp; 🚿 ${p.bathrooms} bath</span>
+                            ${statusBadge(p.status)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function heroSearch() {
+            const keyword = document.getElementById('heroSearch').value.trim();
+            if (keyword) {
+                window.location.href = `/properties/?search=${keyword}`;
+            } else {
+                window.location.href = '/properties/';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadFeatured();
+
+            document.getElementById('heroSearch').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') heroSearch();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="page-header">
+        <div class="container">
+            <div id="welcomeMsg">
+                <div class="page-title">Dashboard</div>
+                <div class="page-subtitle">Welcome back!</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="padding-bottom:3rem;">
+
+        <!-- STAT CARDS ROW -->
+        <div class="grid-4" id="dashStats" style="margin-bottom:2rem;">
+            <div class="stat-card">
+                <div class="stat-card-number" id="statA">-</div>
+                <div class="stat-card-label" id="statALabel">Loading...</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-number" id="statB">-</div>
+                <div class="stat-card-label" id="statBLabel">Loading...</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-number" id="statC">-</div>
+                <div class="stat-card-label">Total Platform Properties</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-number" id="statD">-</div>
+                <div class="stat-card-label">Available Properties</div>
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="card" style="margin-bottom:2rem;">
+            <div class="card-body">
+                <h3 style="font-weight:700; margin-bottom:1rem;">Quick Actions</h3>
+                <div id="quickActions" style="display:flex; gap:1rem; flex-wrap:wrap;"></div>
+            </div>
+        </div>
+
+        <!-- RECENT ITEMS TABLE -->
+        <div class="card">
+            <div class="card-body">
+                <h3 style="font-weight:700; margin-bottom:1rem;" id="recentTitle">Recent Activity</h3>
+                <div id="recentItems">
+                    <div class="spinner">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>© 2024 NaijaHomes - Nigerian Property & Rental Management Platform</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        // This page requires login
+        requireLogin();
+
+        const user = getUser();
+
+        async function loadDashboard() {
+            // Show welcome message
+            document.getElementById('welcomeMsg').innerHTML = `
+                <div class="page-title">Welcome, ${user.first_name}! 👋</div>
+                <div class="page-subtitle">
+                    ${user.role === 'landlord' ? 'Manage your property listings' : 'Track your rental applications'}
+                </div>
+            `;
+
+            // Load platform-wide stats
+            const statsResult = await apiGet('/properties/stats/summary/');
+            if (statsResult.ok) {
+                const stats = statsResult.data;
+                document.getElementById('statC').textContent = stats.total_properties;
+
+                const available = stats.by_status.find(s => s.status === 'available');
+                document.getElementById('statD').textContent = available ? available.count : 0;
+            }
+
+            // Load role-specific content
+            if (user.role === 'landlord') {
+                loadLandlordDashboard();
+            } else {
+                loadTenantDashboard();
+            }
+        }
+
+        async function loadLandlordDashboard() {
+            // Quick action buttons for landlords
+            document.getElementById('quickActions').innerHTML = `
+                <a href="/add-property/" class="btn btn-primary">+ Add New Property</a>
+                <a href="/manage-applications/" class="btn btn-outline">📋 View Applications</a>
+                <a href="/properties/" class="btn btn-outline">🔍 Browse All Properties</a>
+                <a href="/stats/" class="btn btn-outline">📊 View Statistics</a>
+            `;
+
+            // Load landlord's properties
+            const result = await apiGet(`/properties/landlord/${user.id}/`);
+            document.getElementById('statA').textContent = result.ok ? result.data.count : 0;
+            document.getElementById('statALabel').textContent = 'My Listings';
+
+            // Count applications for landlord
+            const appResult = await apiGet(`/applications/landlord/${user.id}/`);
+            document.getElementById('statB').textContent = appResult.ok ? appResult.data.count : 0;
+            document.getElementById('statBLabel').textContent = 'Applications Received';
+
+            document.getElementById('recentTitle').textContent = 'My Property Listings';
+
+            if (!result.ok || result.data.properties.length === 0) {
+                document.getElementById('recentItems').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏠</div>
+                        <p>You have not listed any properties yet.</p>
+                        <a href="/add-property/" class="btn btn-primary" style="margin-top:1rem;">Add Your First Property</a>
+                    </div>`;
+                return;
+            }
+
+            // Show properties in a table
+            document.getElementById('recentItems').innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Location</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${result.data.properties.map(p => `
+                            <tr>
+                                <td><strong>${p.title}</strong></td>
+                                <td>${p.location}, ${p.state}</td>
+                                <td>${formatPrice(p.price)}/yr</td>
+                                <td>${statusBadge(p.status)}</td>
+                                <td>
+                                    <a href="/property-detail/?id=${p.id}" class="btn btn-outline" style="padding:0.3rem 0.8rem; font-size:0.8rem;">View</a>
+                                    <a href="/edit-property/?id=${p.id}" class="btn btn-secondary" style="padding:0.3rem 0.8rem; font-size:0.8rem;">Edit</a>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        async function loadTenantDashboard() {
+            // Quick action buttons for tenants
+            document.getElementById('quickActions').innerHTML = `
+                <a href="/properties/" class="btn btn-primary">🔍 Search Properties</a>
+                <a href="/applications/" class="btn btn-outline">📋 My Applications</a>
+                <a href="/profile/" class="btn btn-outline">👤 My Profile</a>
+            `;
+
+            // Load tenant's applications
+            const result = await apiGet(`/applications/tenant/${user.id}/`);
+            document.getElementById('statA').textContent = result.ok ? result.data.count : 0;
+            document.getElementById('statALabel').textContent = 'My Applications';
+
+            // Count approved applications
+            if (result.ok) {
+                const approved = result.data.applications.filter(a => a.status === 'approved').length;
+                document.getElementById('statB').textContent = approved;
+            }
+            document.getElementById('statBLabel').textContent = 'Approved';
+
+            document.getElementById('recentTitle').textContent = 'My Recent Applications';
+
+            if (!result.ok || result.data.applications.length === 0) {
+                document.getElementById('recentItems').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>You have not applied for any property yet.</p>
+                        <a href="/properties/" class="btn btn-primary" style="margin-top:1rem;">Browse Properties</a>
+                    </div>`;
+                return;
+            }
+
+            document.getElementById('recentItems').innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Location</th>
+                            <th>Price</th>
+                            <th>Application Status</th>
+                            <th>Date Applied</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${result.data.applications.map(a => `
+                            <tr>
+                                <td><strong>${a.property_title}</strong></td>
+                                <td>${a.property_location}, ${a.property_state}</td>
+                                <td>${formatPrice(a.property_price)}/yr</td>
+                                <td>${statusBadge(a.status)}</td>
+                                <td>${formatDate(a.applied_at)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>

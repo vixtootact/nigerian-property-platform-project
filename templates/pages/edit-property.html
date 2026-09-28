@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Property - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="page-header">
+        <div class="container">
+            <div class="page-title">Edit Property</div>
+            <div class="page-subtitle">Update your property listing details</div>
+        </div>
+    </div>
+
+    <div class="container" style="padding-bottom:3rem;">
+        <div style="max-width:700px; margin:0 auto;">
+            <div class="card">
+                <div class="card-body">
+
+                    <div id="alert" class="alert"></div>
+
+                    <h3 style="font-weight:700; margin-bottom:1rem; color:#1a6b3c;">
+                        Basic Information
+                    </h3>
+
+                    <div class="form-group">
+                        <label class="form-label">Property Title *</label>
+                        <input type="text" id="title" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea id="description" class="form-control" rows="4"></textarea>
+                    </div>
+
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Property Type *</label>
+                            <select id="propertyType" class="form-control">
+                                <option value="apartment">Apartment</option>
+                                <option value="duplex">Duplex</option>
+                                <option value="bungalow">Bungalow</option>
+                                <option value="self-contain">Self Contain</option>
+                                <option value="room">Room</option>
+                                <option value="mansion">Mansion</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Annual Rent Price (₦) *</label>
+                            <input type="number" id="price" class="form-control">
+                        </div>
+                    </div>
+
+                    <h3 style="font-weight:700; margin:1.5rem 0 1rem; color:#1a6b3c;">Location</h3>
+
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Area / Neighborhood *</label>
+                            <input type="text" id="location" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">State *</label>
+                            <select id="state" class="form-control">
+                                <option>Lagos</option>
+                                <option>Abuja</option>
+                                <option>Rivers</option>
+                                <option>Enugu</option>
+                                <option>Oyo</option>
+                                <option>Edo</option>
+                                <option>Kano</option>
+                                <option>Kaduna</option>
+                                <option>Delta</option>
+                                <option>Anambra</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">LGA</label>
+                        <input type="text" id="lga" class="form-control">
+                    </div>
+
+                    <h3 style="font-weight:700; margin:1.5rem 0 1rem; color:#1a6b3c;">
+                        Property Details
+                    </h3>
+
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Bedrooms</label>
+                            <input type="number" id="bedrooms" class="form-control" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Bathrooms</label>
+                            <input type="number" id="bathrooms" class="form-control" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Availability Status</label>
+                        <select id="status" class="form-control">
+                            <option value="available">Available</option>
+                            <option value="rented">Rented</option>
+                            <option value="unavailable">Unavailable</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Image URL</label>
+                        <input type="text" id="imageUrl" class="form-control">
+                    </div>
+
+                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                        <button class="btn btn-primary" style="flex:1;" onclick="updateProperty()">
+                            💾 Save Changes
+                        </button>
+                        <a href="/dashboard/" class="btn btn-outline" style="flex:1; text-align:center;">
+                            Cancel
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 NaijaHomes - Nigerian Property & Rental Management Platform</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        requireLogin();
+
+        const user = getUser();
+        const propertyId = getParam('id');
+
+        async function loadProperty() {
+            if (!propertyId) {
+                window.location.href = '/dashboard/';
+                return;
+            }
+
+            const result = await apiGet(`/properties/${propertyId}/`);
+            if (!result.ok) {
+                showError('alert', 'Could not load property.');
+                return;
+            }
+
+            const p = result.data.property;
+
+            document.getElementById('title').value       = p.title;
+            document.getElementById('description').value = p.description;
+            document.getElementById('price').value       = p.price;
+            document.getElementById('location').value    = p.location;
+            document.getElementById('lga').value         = p.lga;
+            document.getElementById('bedrooms').value    = p.bedrooms;
+            document.getElementById('bathrooms').value   = p.bathrooms;
+            document.getElementById('imageUrl').value    = p.image_url;
+
+            document.getElementById('propertyType').value = p.property_type;
+            document.getElementById('state').value        = p.state;
+            document.getElementById('status').value       = p.status;
+        }
+
+        async function updateProperty() {
+            const title        = document.getElementById('title').value.trim();
+            const description  = document.getElementById('description').value.trim();
+            const propertyType = document.getElementById('propertyType').value;
+            const price        = document.getElementById('price').value;
+            const location     = document.getElementById('location').value.trim();
+            const state        = document.getElementById('state').value;
+            const lga          = document.getElementById('lga').value.trim();
+            const bedrooms     = document.getElementById('bedrooms').value;
+            const bathrooms    = document.getElementById('bathrooms').value;
+            const status       = document.getElementById('status').value;
+            const imageUrl     = document.getElementById('imageUrl').value.trim();
+
+            if (!title || !propertyType || !price || !location || !state) {
+                showError('alert', 'Please fill in all required fields.');
+                return;
+            }
+
+            const result = await apiPut(`/properties/${propertyId}/`, {
+                title,
+                description,
+                property_type: propertyType,
+                price,
+                location,
+                state,
+                lga,
+                bedrooms,
+                bathrooms,
+                status,
+                image_url: imageUrl,
+                landlord_id: user.id
+            });
+
+            if (result.ok) {
+                showSuccess('alert', 'Property updated successfully! Redirecting...');
+                setTimeout(() => window.location.href = '/dashboard/', 1500);
+            } else {
+                showError('alert', result.data.error || 'Could not update property.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProperty);
+    </script>
+</body>
+</html>

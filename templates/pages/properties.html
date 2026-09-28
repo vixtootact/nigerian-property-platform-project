@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Properties - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="page-header">
+        <div class="container">
+            <div class="page-title">Browse Properties</div>
+            <div class="page-subtitle">Find your perfect home across Nigeria</div>
+        </div>
+    </div>
+
+    <div class="container" style="padding-bottom:3rem;">
+
+        <!-- SEARCH AND FILTER BAR -->
+        <div class="card" style="margin-bottom:2rem;">
+            <div class="card-body">
+                <div class="grid-2" style="gap:1rem; margin-bottom:1rem;">
+                    <!-- Search input -->
+                    <div>
+                        <label class="form-label">Search</label>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search by title or location...">
+                    </div>
+                    <!-- Filter by state -->
+                    <div>
+                        <label class="form-label">State</label>
+                        <select id="stateFilter" class="form-control">
+                            <option value="">All States</option>
+                            <option>Lagos</option>
+                            <option>Abuja</option>
+                            <option>Rivers</option>
+                            <option>Enugu</option>
+                            <option>Oyo</option>
+                            <option>Edo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-4" style="gap:1rem; margin-bottom:1rem;">
+                    <!-- Filter by property type -->
+                    <div>
+                        <label class="form-label">Type</label>
+                        <select id="typeFilter" class="form-control">
+                            <option value="">All Types</option>
+                            <option value="apartment">Apartment</option>
+                            <option value="duplex">Duplex</option>
+                            <option value="bungalow">Bungalow</option>
+                            <option value="self-contain">Self Contain</option>
+                            <option value="room">Room</option>
+                            <option value="mansion">Mansion</option>
+                        </select>
+                    </div>
+                    <!-- Filter by min price -->
+                    <div>
+                        <label class="form-label">Min Price (₦)</label>
+                        <input type="number" id="minPrice" class="form-control" placeholder="e.g. 100000">
+                    </div>
+                    <!-- Filter by max price -->
+                    <div>
+                        <label class="form-label">Max Price (₦)</label>
+                        <input type="number" id="maxPrice" class="form-control" placeholder="e.g. 2000000">
+                    </div>
+                    <!-- Filter by status -->
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select id="statusFilter" class="form-control">
+                            <option value="">All</option>
+                            <option value="available">Available</option>
+                            <option value="rented">Rented</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:1rem;">
+                    <button class="btn btn-primary" onclick="applyFilters()">🔍 Search</button>
+                    <button class="btn btn-outline" onclick="clearFilters()">Clear Filters</button>
+                    <a href="/api/properties/export/csv/" class="btn btn-outline" style="margin-left:auto;">⬇️ Export CSV</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS COUNT -->
+        <p id="resultsCount" style="color:#6c757d; margin-bottom:1rem; font-size:0.9rem;"></p>
+
+        <!-- PROPERTY CARDS GRID -->
+        <div class="grid-3" id="propertiesGrid">
+            <div class="spinner">Loading properties...</div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>© 2024 NaijaHomes - Nigerian Property & Rental Management Platform</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        // Load properties with optional filters
+        async function loadProperties(params = '') {
+            const grid = document.getElementById('propertiesGrid');
+            grid.innerHTML = '<div class="spinner">Loading properties...</div>';
+
+            const result = await apiGet(`/properties/${params}`);
+
+            if (!result.ok) {
+                grid.innerHTML = '<p style="color:red;">Could not load properties.</p>';
+                return;
+            }
+
+            const properties = result.data.properties;
+            document.getElementById('resultsCount').textContent =
+                `Showing ${properties.length} propert${properties.length === 1 ? 'y' : 'ies'}`;
+
+            if (properties.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <div class="empty-state-icon">🔍</div>
+                        <p>No properties match your search.</p>
+                        <button class="btn btn-outline" onclick="clearFilters()" style="margin-top:1rem;">Clear Filters</button>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = properties.map(p => `
+                <div class="property-card" onclick="window.location.href='/property-detail/?id=${p.id}'">
+                    <div class="property-card-image">${propertyIcon(p.property_type)}</div>
+                    <div class="property-card-body">
+                        <div class="property-card-title">${p.title}</div>
+                        <div class="property-card-location">📍 ${p.location}, ${p.state}</div>
+                        <div class="property-card-price">${formatPrice(p.price)}/year</div>
+                        <div class="property-card-footer">
+                            <span>🛏️ ${p.bedrooms} &nbsp; 🚿 ${p.bathrooms}</span>
+                            ${statusBadge(p.status)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Build query string from filters and reload
+        function applyFilters() {
+            const search    = document.getElementById('searchInput').value.trim();
+            const state     = document.getElementById('stateFilter').value;
+            const type      = document.getElementById('typeFilter').value;
+            const minPrice  = document.getElementById('minPrice').value;
+            const maxPrice  = document.getElementById('maxPrice').value;
+            const status    = document.getElementById('statusFilter').value;
+
+            // Build URL query string
+            const params = new URLSearchParams();
+            if (search)   params.append('search',    search);
+            if (state)    params.append('state',     state);
+            if (type)     params.append('type',      type);
+            if (minPrice) params.append('min_price', minPrice);
+            if (maxPrice) params.append('max_price', maxPrice);
+            if (status)   params.append('status',    status);
+
+            loadProperties(params.toString() ? '?' + params.toString() : '');
+        }
+
+        // Clear all filters and reload
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('stateFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+            document.getElementById('statusFilter').value = '';
+            loadProperties();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if there's a search keyword from the landing page
+            const urlParams = new URLSearchParams(window.location.search);
+            const search = urlParams.get('search');
+            if (search) {
+                document.getElementById('searchInput').value = search;
+                applyFilters();
+            } else {
+                loadProperties();
+            }
+        });
+    </script>
+</body>
+</html>

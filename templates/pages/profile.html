@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - NaijaHomes</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <nav class="navbar" id="navbar"></nav>
+
+    <div class="page-header">
+        <div class="container">
+            <div class="page-title">My Profile</div>
+            <div class="page-subtitle">Manage your account information</div>
+        </div>
+    </div>
+
+    <div class="container" style="padding-bottom:3rem;">
+        <div style="max-width:600px; margin:0 auto;">
+
+            <div class="card" style="margin-bottom:1.5rem; text-align:center; padding:2rem;">
+                <div style="width:80px; height:80px; background:#1a6b3c; border-radius:50%;
+                            display:flex; align-items:center; justify-content:center;
+                            font-size:2rem; color:white; font-weight:700; margin:0 auto 1rem;">
+                    <span id="avatarLetter">?</span>
+                </div>
+                <h2 id="profileName" style="font-weight:700; margin-bottom:0.3rem;">Loading...</h2>
+                <p id="profileRole" style="color:#6c757d;"></p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h3 style="font-weight:700; margin-bottom:1rem;">Edit Profile</h3>
+
+                    <div id="alert" class="alert"></div>
+
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            <input type="text" id="firstName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" id="lastName" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="email" class="form-control" disabled
+                            style="background:#f8f9fa; cursor:not-allowed;">
+                        <small style="color:#6c757d;">Email cannot be changed</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" id="phone" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Account Type</label>
+                        <input type="text" id="role" class="form-control" disabled
+                            style="background:#f8f9fa; cursor:not-allowed; text-transform:capitalize;">
+                    </div>
+
+                    <div style="display:flex; gap:1rem; margin-top:1rem;">
+                        <button class="btn btn-primary" style="flex:1;" onclick="updateProfile()">
+                            💾 Save Changes
+                        </button>
+                        <button class="btn btn-danger" onclick="logout()" style="flex:1;">
+                            🚪 Logout
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 NaijaHomes - Nigerian Property & Rental Management Platform</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        requireLogin();
+        const user = getUser();
+
+        async function loadProfile() {
+            const result = await apiGet(`/accounts/profile/${user.id}/`);
+
+            if (!result.ok) {
+                showError('alert', 'Could not load profile.');
+                return;
+            }
+
+            const u = result.data.user;
+
+            document.getElementById('avatarLetter').textContent = u.first_name[0].toUpperCase();
+            document.getElementById('profileName').textContent  = `${u.first_name} ${u.last_name}`;
+            document.getElementById('profileRole').textContent  = u.role.charAt(0).toUpperCase() + u.role.slice(1);
+
+            document.getElementById('firstName').value = u.first_name;
+            document.getElementById('lastName').value  = u.last_name;
+            document.getElementById('email').value     = u.email;
+            document.getElementById('phone').value     = u.phone || '';
+            document.getElementById('role').value      = u.role;
+        }
+
+        async function updateProfile() {
+            const first_name = document.getElementById('firstName').value.trim();
+            const last_name  = document.getElementById('lastName').value.trim();
+            const phone      = document.getElementById('phone').value.trim();
+
+            if (!first_name || !last_name) {
+                showError('alert', 'First name and last name are required.');
+                return;
+            }
+
+            const result = await apiPut(`/accounts/profile/${user.id}/`, {
+                first_name, last_name, phone
+            });
+
+            if (result.ok) {
+                const updatedUser = { ...user, first_name, last_name, phone };
+                saveUser(updatedUser);
+                showSuccess('alert', 'Profile updated successfully!');
+
+                document.getElementById('profileName').textContent  = `${first_name} ${last_name}`;
+                document.getElementById('avatarLetter').textContent = first_name[0].toUpperCase();
+            } else {
+                showError('alert', result.data.error || 'Could not update profile.');
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                logoutUser();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>
